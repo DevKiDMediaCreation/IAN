@@ -1,0 +1,18 @@
+<html>
+  <body>
+    <form id="ev-payment-form">
+      <div id="ev-card-fields">
+        <input type="text" id="ev-card-fields"></input>
+      </div>
+    </form>
+  </body>
+  <script src="https://js.evervault.com/v2"></script>
+  <script>
+    const evervault = new Evervault('<TEAM_ID>', '<APP_ID>')
+    const inputs = evervault.inputs('ev-card-fields')
+
+    const hook = inputs.on('change', async (encryptedCardDetails) => {
+      console.log(encryptedCardDetails)
+    })
+  </script>
+</html>
