@@ -6,7 +6,7 @@
 import json
 
 
-class SAHF_512:
+class SAHF3_512:  # Secure Advanced Hashing Function # Duy Nam Sinus Aetheny Hashing Algorithm DNSA
     # Init the class and runtime variables
     def __init__(self, h_string: str, salt: str = "1", *, difficulty: int = 1) -> None:
         self.data = h_string
@@ -17,8 +17,17 @@ class SAHF_512:
         )
         self.timestamp = "0x" + h_string[-2:]
         self.length = h_string.__len__()
-        self.difficulty = 1 if difficulty not in {0, 1} else difficulty
+        self.difficulty = 1 if difficulty == 1 else difficulty
         self.saltlen = self.salt.__len__()
+
+    def __len__(self) -> int:
+        return self.data.__len__()
+
+    def __str__(self) -> str:
+        return self.data
+
+    def __difficulty__(self) -> int:
+        return self.difficulty
 
     # Hash
     def hash(self) -> str:
@@ -53,18 +62,14 @@ class SAHF_512:
             # Reverse the string
             self.data = self.data[::-1]
 
-        # Find pattern and replace
-        replace = [
-            ["0", "a"],
-            ["!", "Abms"],
-            ["ms1", "4ac"],
-            ["ms2", "4bc"],
-            ["ed", "adc"],
-        ]
+        # Set every char a vector position
+        self.data = [ord(i) for i in self.data]
 
-        # Replacing from a list of pattern
-        for i in replace:
-            self.data = self.data.replace(i[0], i[1])
+        # Multiply each element by the length of the string and the saltlen
+        self.data = [i * self.length * self.saltlen for i in self.data]
+
+        # Convert the list of int in a string
+        self.data = "".join([str(i) for i in self.data])
 
         # Create a list of patter und replace
         self.data = [self.data[i : i + 2] for i in range(0, len(self.data), 2)]
@@ -75,24 +80,6 @@ class SAHF_512:
         # Convert the list of string in a string
         self.data = "".join(self.data)
 
-        # Create a list of patter und replace
-        replace = [
-            ["ex", "d"],
-            ["x", "3"],
-            ["4", "23g6"],
-            ["6", "4"],
-            ["4vs", "a3d"],
-            ["sa", "a03"],
-            ["2d", "Ac"],
-            [" ", "c"],
-            [".", "1e"],
-        ]
-
-        # Replacing again with a list of pattern
-        for i in replace:
-            # Replace the pattern
-            self.data = self.data.replace(i[0], i[1])
-
         # Split in 5 char
         self.data = [self.data[i : i + 5] for i in range(0, len(self.data), 5)]
         # Set all upper case if the element is odd
@@ -102,13 +89,28 @@ class SAHF_512:
         self.data = "".join(self.data)
 
         # Read file table.json
-        with open("./hash/v1/replace.json", "r") as file:
+        with open("./hash/v3/replace.json", "r") as file:
             # Load the file
             replace = json.load(file)
 
         # Replacing again with a list of patterns
         for pattern in replace["content"]:
-            self.data = self.data.replace(pattern[0], pattern[1])
+            # Set a max-length of 512
+            if self.data.__len__() <= 512 * int(self.difficulty):
+                # Replace the pattern
+                self.data = self.data.replace(pattern[0], pattern[1])
+
+        # Read file table.json
+        with open("./hash/v3/replace_2.json", "r") as file:
+            # Load the file
+            replace = json.load(file)
+
+        # Replacing again with a list of patterns
+        for pattern in replace["content"]:
+            # Set a max-length of 512
+            if self.data.__len__() <= 512 * int(self.difficulty):
+                # Replace the pattern
+                self.data = self.data.replace(pattern[0], pattern[1])
 
         # Do the formatation
         self.data = self.data + "$" + self.salt + "$" + self.timestamp + "$"
@@ -127,7 +129,7 @@ class SAHF_512:
 
             # Final shift algorithm: Shift by gcd * length ** difficulty
             i = 0
-            while i <= self.length * self.gcd * self.difficulty:
+            while i <= self.length * self.gcd**self.difficulty:
                 # Shift the string
                 self.data = self.data[1:] + self.data[0]
                 i += 1
@@ -137,6 +139,21 @@ class SAHF_512:
 
         # Exchange the first and last element
         self.data[0], self.data[-1] = self.data[-1], self.data[0]
+
+        # Split the salt in char
+        self.salt = [self.salt[i : i + 1] for i in range(0, len(self.salt), 1)]
+        # Convert string in number
+        self.salt = [ord(i) for i in self.salt]
+        # Difficult to binary
+        self.difficulty = bin(self.difficulty)
+
+        # Add to every salt to difficult
+        self.salt = [i + int(self.difficulty, 2) for i in self.salt]
+
+        # Get the sum of the salt and give it to every element of char
+        self.data = [i + str(sum(self.salt)) for i in self.data]
+
+        self.data = self.data + self.data[::-1]
 
         # Convert the list of string in a string
         self.data = "".join(self.data)
